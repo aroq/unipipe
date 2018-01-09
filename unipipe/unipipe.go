@@ -6,26 +6,27 @@ import (
 )
 
 type Unipipe struct {
-	uniconf.Uniconf
+	config map[string]interface{}
 }
 
 var u *Unipipe
 
-// Init initializes unipipe.
+// init initializes unipipe.
 func init() {
 	u = New()
+	u.config = uniconf.Config().(map[string]interface{})
 }
 
-// New returns an initialized Uniconf instance.
+// New returns an initialized Unipipe instance.
 func New() *Unipipe {
 	u := new(Unipipe)
 	return u
 }
 
+// Job returns a processed Job config by name.
 func Job(name string) string { return u.job(name) }
 func (u *Unipipe) job(name string) string {
-	config := uniconf.Config().(map[string]interface{})
-	uniconf.Process(config["jobs"], "jobs", "config")
-	job, _ := unitool.CollectInvertedKeyParamsFromJsonPath(config, name, "jobs")
+	uniconf.Process(u.config["jobs"], "jobs", "config")
+	job, _ := unitool.CollectInvertedKeyParamsFromJsonPath(u.config, name, "jobs")
 	return unitool.MarshallYaml(job)
 }
