@@ -26,7 +26,51 @@ func New() *Unipipe {
 // Job returns a processed Job config by name.
 func Job(name string) string { return u.job(name) }
 func (u *Unipipe) job(name string) string {
-	uniconf.Process(u.config["jobs"], "jobs", "config")
+	uniconf.SetContexts("jobs.dev.jobs.install")
+	uniconf.AddPhase(&uniconf.Phase{
+		Name: "config",
+		Phases: []*uniconf.Phase{
+			{
+				Name:     "load",
+				Callback: uniconf.Load,
+			},
+			{
+				Name:     "set_contexts",
+				Callback: uniconf.ProcessContexts,
+			},
+			//{
+			//	Name:     "print",
+			//	Callback: uniconf.PrintConfig,
+			//	Args: []interface{}{
+			//		"jobs",
+			//	},
+			//},
+			{
+				Name:     "flatten",
+				Callback: uniconf.FlattenConfig,
+			},
+			{
+				Name:     "process",
+				Callback: uniconf.ProcessKeys,
+				Args: []interface{}{
+					name,
+					"jobs",
+					[]*uniconf.Processor{
+						//{
+						//	Callback:    uniconf.InterpolateProcess,
+						//	ExcludeKeys: []string{"from"},
+						//},
+						{
+							Callback:    uniconf.FromProcess,
+							IncludeKeys: []string{"from"},
+						},
+					},
+				},
+			},
+		},
+	})
+	uniconf.Execute()
+
 	job, _ := unitool.CollectInvertedKeyParamsFromJsonPath(u.config, name, "jobs")
 	return unitool.MarshallYaml(job)
 }
